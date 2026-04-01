@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<title>Caderninho PRO</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+body{font-family:Arial;margin:0;background:linear-gradient(135deg,#1e1e2f,#3a3a6a);color:#fff}
+header{display:flex;align-items:center;justify-content:center;gap:10px;padding:20px;font-size:24px}
+.logo{width:45px;height:45px;border-radius:10px}
+.container{display:flex}
+.menu{width:200px;background:#111;height:100vh;padding:10px}
+.menu button{width:100%;margin:5px 0;padding:10px;background:#444;color:#fff;border:none;cursor:pointer}
+.menu button.active{background:#00c896}
+.content{flex:1;padding:20px}
+.card{background:#2a2a40;padding:15px;margin-top:10px;border-radius:10px}
+.hidden{display:none}
+.modal{position:fixed;top:0;left:0;width:100%;height:100%;background:#0008;display:none;justify-content:center;align-items:center}
+.modal-content{background:#222;padding:20px;border-radius:10px;width:300px}
+input,textarea,select{width:100%;margin-bottom:10px;padding:8px}
+.add-btn{background:#00c896;border:none;padding:10px;cursor:pointer}
+table input{width:60px;text-align:center}
+</style>
+</head>
+
+<body>
+
+<header>
+<img src="https://res.cloudinary.com/demx2vuon/image/upload/v1767187421/Logomarca_zev7vf.png" class="logo">
+<span>Caderninho PRO</span>
+</header>
+
+<div class="container">
+
+<div class="menu">
+<button onclick="setDisc('todas',this)" class="active">Todas</button>
+<button onclick="setDisc('natureza',this)">Natureza</button>
+<button onclick="setDisc('matematica',this)">Matemática</button>
+<button onclick="setDisc('linguagens',this)">Linguagens</button>
+<button onclick="setDisc('humanas',this)">Humanas</button>
+<button onclick="setDisc('graficos',this)">📊 Gráficos</button>
+<button onclick="setDisc('desempenho',this)">📈 Desempenho</button>
+</div>
+
+<!-- MAIN -->
+<div id="mainContent" class="content">
+<button class="add-btn" onclick="abrirModal()">+ Erro</button>
+<div id="lista"></div>
+
+<h3>🧠 Mapa de Fraquezas</h3>
+<div id="fraquezas"></div>
+</div>
+
+<!-- GRAFICOS -->
+<div id="painelGraficos" class="content hidden">
+<h2>📊 Análise de Desempenho</h2>
+<canvas id="graficoDisciplina"></canvas>
+<canvas id="graficoMotivo"></canvas>
+</div>
+
+<!-- DESEMPENHO -->
+<div id="painelDesempenho" class="content hidden">
+<h2>📈 Desempenho ENEM</h2>
+
+<table border="1" style="width:100%;background:#222;color:#fff">
+<thead>
+<tr>
+<th>Prova</th>
+<th>Natureza</th>
+<th>Matemática</th>
+<th>Humanas</th>
+<th>Linguagens</th>
+<th>Total</th>
+</tr>
+</thead>
+<tbody id="tabelaDesempenho"></tbody>
+</table>
+
+</div>
+
+</div>
+
+<!-- MODAL -->
+<div class="modal" id="modal">
+<div class="modal-content">
+<h3 id="tituloModal">Novo Erro</h3>
+
+<select id="materia">
+<option value="natureza">Natureza</option>
+<option value="matematica">Matemática</option>
+<option value="linguagens">Linguagens</option>
+<option value="humanas">Humanas</option>
+</select>
+
+<input id="prova" placeholder="Nome da prova">
+<input id="assunto" placeholder="Assunto">
+
+<select id="nivelDificuldade">
+<option value="facil">Fácil</option>
+<option value="medio">Médio</option>
+<option value="dificil">Difícil</option>
+</select>
+
+<select id="motivoErro">
+<option>Falta de conhecimento</option>
+<option>Interpretação errada</option>
+<option>Desatenção</option>
+<option>Dificuldade específica</option>
+<option>Falta de prática</option>
+<option>Ansiedade</option>
+<option>Tempo</option>
+<option>Estratégia</option>
+<option>Lacunas na base</option>
+</select>
+
+<input type="file" id="img">
+<textarea id="nota"></textarea>
+
+<button onclick="salvar()">Salvar</button>
+<button onclick="fechar()">Cancelar</button>
+</div>
+</div>
+
+<script>
+let disc='todas';
+let chartDisciplina=null;
+let chartMotivo=null;
+let editIndex=null;
+
+function setDisc(d,el){
+disc=d;
+
+document.querySelectorAll('.menu button').forEach(b=>b.classList.remove('active'));
+el.classList.add('active');
+
+mainContent.style.display='none';
+painelGraficos.style.display='none';
+painelDesempenho.style.display='none';
+
+if(d==='graficos'){
+painelGraficos.style.display='block';
+renderGraficos();
+}
+else if(d==='desempenho'){
+painelDesempenho.style.display='block';
+renderDesempenho();
+}
+else{
+mainContent.style.display='block';
+render();
+}
+}
+
+function abrirModal(){modal.style.display='flex'}
+function fechar(){modal.style.display='none';editIndex=null}
+
+function salvar(){
+let erros=JSON.parse(localStorage.getItem('erros')||'[]');
+let reader=new FileReader();
+let file=img.files[0];
+
+reader.onload=()=>{
+let novo={
+materia:materia.value,
+prova:prova.value,
+assunto:assunto.value,
+nivelDificuldade:nivelDificuldade.value,
+motivoErro:motivoErro.value,
+img:file?reader.result:null,
+nota:nota.value,
+data:new Date().toISOString(),
+resolvido:false,
+aberto:false
+};
+
+erros.push(novo);
+localStorage.setItem('erros',JSON.stringify(erros));
+fechar();
+render();
+};
+
+if(file) reader.readAsDataURL(file);
+else reader.onload();
+}
+
+function render(){
+let erros=JSON.parse(localStorage.getItem('erros')||'[]');
+lista.innerHTML='';
+let mapa={};
+
+erros.forEach(e=>{
+if(!e.resolvido){
+if(disc!=='todas'&&e.materia!==disc)return;
+
+let score=1;
+let dias=(Date.now()-new Date(e.data))/86400000;
+if(dias<3)score+=2;
+
+if(!mapa[e.assunto])mapa[e.assunto]=0;
+mapa[e.assunto]+=score;
+}
+});
+
+erros.forEach((e,i)=>{
+if(disc==='todas'||e.materia===disc){
+lista.innerHTML+=`
+<div class="card">
+<b>${e.assunto}</b><br>
+${e.materia} - ${e.prova}<br>
+${e.motivoErro}
+<br>
+<button onclick="toggle(${i})">Ver</button>
+<button onclick="resolver(${i})">✔️</button>
+<button onclick="del(${i})">X</button>
+<div class="${e.aberto?'':'hidden'}">${e.nota}</div>
+</div>`;
+}
+});
+
+fraquezas.innerHTML='';
+Object.entries(mapa).sort((a,b)=>b[1]-a[1]).slice(0,5).forEach(([a])=>{
+fraquezas.innerHTML+=`<div class="card">${a}</div>`;
+});
+}
+
+function renderGraficos(){
+let erros=JSON.parse(localStorage.getItem('erros')||'[]');
+
+let discCont={natureza:0,matematica:0,linguagens:0,humanas:0};
+let motivoCont={};
+
+erros.forEach(e=>{
+if(!e.resolvido){
+discCont[e.materia]++;
+if(!motivoCont[e.motivoErro])motivoCont[e.motivoErro]=0;
+motivoCont[e.motivoErro]++;
+}
+});
+
+if(chartDisciplina)chartDisciplina.destroy();
+chartDisciplina=new Chart(graficoDisciplina,{
+type:'bar',
+data:{
+labels:['Natureza','Matemática','Linguagens','Humanas'],
+datasets:[{data:Object.values(discCont)}]
+}
+});
+
+if(chartMotivo)chartMotivo.destroy();
+chartMotivo=new Chart(graficoMotivo,{
+type:'bar',
+data:{
+labels:Object.keys(motivoCont),
+datasets:[{data:Object.values(motivoCont)}]
+},
+options:{indexAxis:'y',plugins:{legend:{display:false}}}
+});
+}
+
+function gerarProvas(){
+let p=[];
+for(let a=2010;a<=2025;a++){
+p.push(a.toString());
+p.push(a+' PPL');
+}
+return p;
+}
+
+function renderDesempenho(){
+let dados=JSON.parse(localStorage.getItem('desempenho')||'{}');
+let provas=gerarProvas();
+
+tabelaDesempenho.innerHTML='';
+
+provas.forEach(pr=>{
+let d=dados[pr]||{nat:'',mat:'',hum:'',lin:''};
+let total=(+d.nat||0)+(+d.mat||0)+(+d.hum||0)+(+d.lin||0);
+
+tabelaDesempenho.innerHTML+=`
+<tr>
+<td>${pr}</td>
+<td><input value="${d.nat}" onchange="salvarDesempenho('${pr}','nat',this.value)"></td>
+<td><input value="${d.mat}" onchange="salvarDesempenho('${pr}','mat',this.value)"></td>
+<td><input value="${d.hum}" onchange="salvarDesempenho('${pr}','hum',this.value)"></td>
+<td><input value="${d.lin}" onchange="salvarDesempenho('${pr}','lin',this.value)"></td>
+<td><b>${total}</b></td>
+</tr>`;
+});
+}
+
+function salvarDesempenho(p,c,v){
+let dados=JSON.parse(localStorage.getItem('desempenho')||'{}');
+if(!dados[p])dados[p]={nat:'',mat:'',hum:'',lin:''};
+dados[p][c]=v;
+localStorage.setItem('desempenho',JSON.stringify(dados));
+renderDesempenho();
+}
+
+function resolver(i){
+let erros=JSON.parse(localStorage.getItem('erros'));
+erros[i].resolvido=!erros[i].resolvido;
+localStorage.setItem('erros',JSON.stringify(erros));
+render();
+}
+
+function toggle(i){
+let erros=JSON.parse(localStorage.getItem('erros'));
+erros[i].aberto=!erros[i].aberto;
+localStorage.setItem('erros',JSON.stringify(erros));
+render();
+}
+
+function del(i){
+let erros=JSON.parse(localStorage.getItem('erros'));
+erros.splice(i,1);
+localStorage.setItem('erros',JSON.stringify(erros));
+render();
+}
+
+render();
+</script>
+
+</body>
+</html>
