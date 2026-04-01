@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <title>Caderninho PRO</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <style>
 body{font-family:Arial;margin:0;background:linear-gradient(135deg,#1e1e2f,#3a3a6a);color:#fff}
 header{display:flex;align-items:center;justify-content:center;gap:10px;padding:20px;font-size:24px}
@@ -20,6 +21,12 @@ header{display:flex;align-items:center;justify-content:center;gap:10px;padding:2
 input,textarea,select{width:100%;margin-bottom:10px;padding:8px}
 .add-btn{background:#00c896;border:none;padding:10px;cursor:pointer}
 table input{width:60px;text-align:center}
+
+/* 🔥 FRAQUEZAS */
+.weak{padding:10px;border-radius:6px;margin:5px 0;font-weight:bold}
+.critico{background:#ff3b3b}
+.atencao{background:#ff9f1a}
+.ok{background:#2ecc71}
 </style>
 </head>
 
@@ -53,7 +60,7 @@ table input{width:60px;text-align:center}
 
 <!-- GRAFICOS -->
 <div id="painelGraficos" class="content hidden">
-<h2>📊 Análise de Desempenho</h2>
+<h2>📊 Análise de Erros</h2>
 <canvas id="graficoDisciplina"></canvas>
 <canvas id="graficoMotivo"></canvas>
 </div>
@@ -151,8 +158,31 @@ render();
 }
 }
 
-function abrirModal(){modal.style.display='flex'}
-function fechar(){modal.style.display='none';editIndex=null}
+function abrirModal(){
+tituloModal.innerText='Novo Erro';
+modal.style.display='flex';
+}
+
+function fechar(){
+modal.style.display='none';
+editIndex=null;
+}
+
+function editar(i){
+let erros=JSON.parse(localStorage.getItem('erros'));
+let e=erros[i];
+
+materia.value=e.materia;
+prova.value=e.prova;
+assunto.value=e.assunto;
+nivelDificuldade.value=e.nivelDificuldade;
+motivoErro.value=e.motivoErro;
+nota.value=e.nota;
+
+editIndex=i;
+tituloModal.innerText='Editar Erro';
+modal.style.display='flex';
+}
 
 function salvar(){
 let erros=JSON.parse(localStorage.getItem('erros')||'[]');
@@ -166,14 +196,20 @@ prova:prova.value,
 assunto:assunto.value,
 nivelDificuldade:nivelDificuldade.value,
 motivoErro:motivoErro.value,
-img:file?reader.result:null,
+img:file?reader.result:(editIndex!==null?erros[editIndex].img:null),
 nota:nota.value,
-data:new Date().toISOString(),
-resolvido:false,
+data:editIndex!==null?erros[editIndex].data:new Date().toISOString(),
+resolvido:editIndex!==null?erros[editIndex].resolvido:false,
 aberto:false
 };
 
+if(editIndex!==null){
+erros[editIndex]=novo;
+editIndex=null;
+}else{
 erros.push(novo);
+}
+
 localStorage.setItem('erros',JSON.stringify(erros));
 fechar();
 render();
@@ -194,32 +230,60 @@ if(disc!=='todas'&&e.materia!==disc)return;
 
 let score=1;
 let dias=(Date.now()-new Date(e.data))/86400000;
-if(dias<3)score+=2;
 
-if(!mapa[e.assunto])mapa[e.assunto]=0;
+if(dias<3) score+=2;
+if(e.nivelDificuldade==='dificil') score+=2;
+
+if(!mapa[e.assunto]) mapa[e.assunto]=0;
 mapa[e.assunto]+=score;
 }
 });
 
 erros.forEach((e,i)=>{
 if(disc==='todas'||e.materia===disc){
+
 lista.innerHTML+=`
 <div class="card">
-<b>${e.assunto}</b><br>
-${e.materia} - ${e.prova}<br>
-${e.motivoErro}
+<b>${e.assunto}</b> (${e.nivelDificuldade})<br>
+Matéria: ${e.materia}<br>
+Prova: ${e.prova}<br>
+Motivo: ${e.motivoErro}<br>
+${e.resolvido?'✅':''}
+
 <br>
-<button onclick="toggle(${i})">Ver</button>
+
+<button onclick="toggle(${i})">
+${e.aberto?'🔽 Ocultar':'👁 Ver'}
+</button>
+
+<button onclick="editar(${i})">✏️</button>
 <button onclick="resolver(${i})">✔️</button>
-<button onclick="del(${i})">X</button>
-<div class="${e.aberto?'':'hidden'}">${e.nota}</div>
-</div>`;
+<button onclick="del(${i})">❌</button>
+
+<div style="margin-top:10px; ${e.aberto?'':'display:none'}">
+<p>${e.nota||''}</p>
+${e.img?`<img src="${e.img}" width="200">`:''}
+</div>
+</div>
+`;
 }
 });
 
 fraquezas.innerHTML='';
-Object.entries(mapa).sort((a,b)=>b[1]-a[1]).slice(0,5).forEach(([a])=>{
-fraquezas.innerHTML+=`<div class="card">${a}</div>`;
+
+Object.entries(mapa)
+.sort((a,b)=>b[1]-a[1])
+.slice(0,5)
+.forEach(([assunto,score])=>{
+
+let nivel='ok';
+if(score>8) nivel='critico';
+else if(score>4) nivel='atencao';
+
+fraquezas.innerHTML+=`
+<div class="weak ${nivel}">
+${assunto}
+</div>`;
 });
 }
 
