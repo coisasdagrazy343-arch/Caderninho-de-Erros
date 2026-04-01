@@ -290,7 +290,7 @@ fraquezas.innerHTML='';
 
 Object.entries(mapa)
 .sort((a,b)=>b[1]-a[1])
-.slice(0,7)
+.slice(0,999)
 .forEach(([assunto,score])=>{
 
 let nivel='ok';
@@ -299,7 +299,7 @@ else if(score>4) nivel='atencao';
 
 fraquezas.innerHTML+=`
 <div class="weak ${nivel}">
-${assunto} (${score})
+${assunto}
 </div>`;
 });
 }
