@@ -17,7 +17,6 @@ header{display:flex;align-items:center;justify-content:center;gap:10px;padding:2
 .card{background:#2a2a40;padding:15px;margin-top:10px;border-radius:10px}
 .hidden{display:none}
 
-/* PRIORIDADE */
 .alta{background:#ff3b3b}
 .baixa{background:#3498db}
 
@@ -28,13 +27,11 @@ input,textarea,select{width:100%;margin-bottom:10px;padding:8px}
 .add-btn{background:#00c896;border:none;padding:10px;cursor:pointer}
 table input{width:60px;text-align:center}
 
-/* FRAQUEZAS */
 .weak{padding:10px;border-radius:6px;margin:5px 0;font-weight:bold}
 .critico{background:#ff3b3b}
 .atencao{background:#ff9f1a}
 .ok{background:#2ecc71}
 
-/* IMAGEM */
 .img-preview{width:200px;border-radius:8px;cursor:pointer;transition:0.2s}
 .img-preview:hover{transform:scale(1.05)}
 </style>
@@ -59,23 +56,29 @@ table input{width:60px;text-align:center}
 <button onclick="setDisc('desempenho',this)">📈 Desempenho</button>
 </div>
 
-<!-- MAIN -->
 <div id="mainContent" class="content">
 <button class="add-btn" onclick="abrirModal()">+ Erro</button>
+
+<!-- 🔎 LUPINHA -->
+<input 
+id="busca" 
+placeholder="🔎 Buscar por assunto, prova, erro..." 
+oninput="render()" 
+style="width:100%;padding:10px;margin-top:10px;border-radius:8px;border:none"
+>
+
 <div id="lista"></div>
 
 <h3>🧠 Mapa de Fraquezas</h3>
 <div id="fraquezas"></div>
 </div>
 
-<!-- GRAFICOS -->
 <div id="painelGraficos" class="content hidden">
 <h2>📊 Análise de Erros</h2>
 <canvas id="graficoDisciplina"></canvas>
 <canvas id="graficoMotivo"></canvas>
 </div>
 
-<!-- DESEMPENHO -->
 <div id="painelDesempenho" class="content hidden">
 <h2>📈 Desempenho ENEM</h2>
 <table border="1" style="width:100%;background:#222;color:#fff">
@@ -95,7 +98,6 @@ table input{width:60px;text-align:center}
 
 </div>
 
-<!-- MODAL -->
 <div class="modal" id="modal">
 <div class="modal-content">
 <h3 id="tituloModal">Novo Erro</h3>
@@ -142,7 +144,6 @@ table input{width:60px;text-align:center}
 </div>
 </div>
 
-<!-- MODAL IMG -->
 <div id="modalImg" class="modal" onclick="fecharImagem()">
 <img id="imgGrande" style="max-width:90%;max-height:90%;border-radius:10px">
 </div>
@@ -222,9 +223,15 @@ let erros=JSON.parse(localStorage.getItem('erros')||'[]');
 lista.innerHTML='';
 let mapa={};
 
+let termo = (busca.value || '').toLowerCase();
+
 erros.forEach(e=>{
 if(!e.resolvido){
 if(disc!=='todas'&&e.materia!==disc)return;
+
+let textoCompleto = `${e.assunto} ${e.prova} ${e.materia} ${e.motivoErro} ${e.nota}`.toLowerCase();
+if(termo && !textoCompleto.includes(termo)) return;
+
 let score=1;
 let dias=(Date.now()-new Date(e.data))/86400000;
 if(dias<3) score+=2;
@@ -236,6 +243,10 @@ mapa[e.assunto]+=score;
 
 erros.forEach((e,i)=>{
 if(disc==='todas'||e.materia===disc){
+
+let textoCompleto = `${e.assunto} ${e.prova} ${e.materia} ${e.motivoErro} ${e.nota}`.toLowerCase();
+if(termo && !textoCompleto.includes(termo)) return;
+
 let classe=e.prioridade==='alta'?'alta':e.prioridade==='baixa'?'baixa':'';
 
 lista.innerHTML+=`<div class="card ${classe}">
